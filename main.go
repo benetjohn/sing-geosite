@@ -59,10 +59,10 @@ func get(downloadURL *string) ([]byte, error) {
 
 func download(release *github.RepositoryRelease) ([]byte, error) {
 	geositeAsset := common.Find(release.Assets, func(it *github.ReleaseAsset) bool {
-		return *it.Name == "dlc.dat"
+		return *it.Name == "geosite.dat"
 	})
 	geositeChecksumAsset := common.Find(release.Assets, func(it *github.ReleaseAsset) bool {
-		return *it.Name == "dlc.dat.sha256sum"
+		return *it.Name == "geosite.dat.sha256sum"
 	})
 	if geositeAsset == nil {
 		return nil, E.New("geosite asset not found in upstream release ", release.Name)
@@ -356,20 +356,10 @@ func setActionOutput(name string, content string) {
 	os.Stdout.WriteString("::set-output name=" + name + "::" + content + "\n")
 }
 
-func release(source string, destination string, output string, cnOutput string, ruleSetOutput string) error {
+func release(source string, output string, cnOutput string, ruleSetOutput string) error {
 	sourceRelease, err := fetch(source)
 	if err != nil {
 		return err
-	}
-	destinationRelease, err := fetch(destination)
-	if err != nil {
-		log.Warn("missing destination latest release")
-	} else {
-		if os.Getenv("NO_SKIP") != "true" && strings.Contains(*destinationRelease.Name, *sourceRelease.Name) {
-			log.Info("already latest")
-			setActionOutput("skip", "true")
-			return nil
-		}
 	}
 	err = generate(sourceRelease, output, cnOutput, ruleSetOutput)
 	if err != nil {
@@ -381,8 +371,7 @@ func release(source string, destination string, output string, cnOutput string, 
 
 func main() {
 	err := release(
-		"v2fly/domain-list-community",
-		"sagernet/sing-geosite",
+		"Loyalsoldier/v2ray-rules-dat",
 		"geosite.db",
 		"geosite-cn.db",
 		"rule-set",
