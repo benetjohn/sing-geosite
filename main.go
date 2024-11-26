@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -216,9 +216,6 @@ func filterTags(data map[string][]geosite.Item) {
 	}
 	for _, it := range badCodeList {
 		badList := data[it.badCode]
-		if it.badCode == "geolocation-!cn@cn" {
-			fmt.Println(badList)
-		}
 		if badList == nil {
 			panic("bad list not found: " + it.badCode)
 		}
@@ -265,6 +262,18 @@ func mergeTags(data map[string][]geosite.Item) {
 		}
 		cnCodeList = append(cnCodeList, code)
 	}
+	for _, code := range codeList {
+		if !strings.HasPrefix(code, "category-") {
+			continue
+		}
+		if !strings.HasSuffix(code, "-cn") {
+			continue
+		}
+		if strings.Contains(code, "@") {
+			continue
+		}
+		cnCodeList = append(cnCodeList, code)
+	}
 	newMap := make(map[geosite.Item]bool)
 	for _, item := range data["geolocation-cn"] {
 		newMap[item] = true
@@ -279,10 +288,14 @@ func mergeTags(data map[string][]geosite.Item) {
 		newList = append(newList, item)
 	}
 	data["geolocation-cn"] = newList
+	data["cn"] = append(newList, geosite.Item{
+		Type:  geosite.RuleTypeDomainSuffix,
+		Value: "cn",
+	})
 	println("merged cn categories: " + strings.Join(cnCodeList, ","))
 }
 
-func generate(release *github.RepositoryRelease, output string, cnOutput string, ruleSetOutput string) error {
+func generate(release *github.RepositoryRelease, output string, cnOutput string, ruleSetOutput string, ruleSetUnstableOutput string) error {
 	vData, err := download(release)
 	if err != nil {
 		return err
@@ -300,7 +313,12 @@ func generate(release *github.RepositoryRelease, output string, cnOutput string,
 		return err
 	}
 	defer outputFile.Close()
-	err = geosite.Write(outputFile, domainMap)
+	writer := bufio.NewWriter(outputFile)
+	err = geosite.Write(writer, domainMap)
+	if err != nil {
+		return err
+	}
+	err = writer.Flush()
 	if err != nil {
 		return err
 	}
@@ -316,12 +334,19 @@ func generate(release *github.RepositoryRelease, output string, cnOutput string,
 		return err
 	}
 	defer cnOutputFile.Close()
-	err = geosite.Write(cnOutputFile, cnDomainMap)
+	writer.Reset(cnOutputFile)
+	err = geosite.Write(writer, cnDomainMap)
+	if err != nil {
+		return err
+	}
+	err = writer.Flush()
 	if err != nil {
 		return err
 	}
 	os.RemoveAll(ruleSetOutput)
+	os.RemoveAll(ruleSetUnstableOutput)
 	err = os.MkdirAll(ruleSetOutput, 0o755)
+	err = os.MkdirAll(ruleSetUnstableOutput, 0o755)
 	if err != nil {
 		return err
 	}
@@ -340,17 +365,30 @@ func generate(release *github.RepositoryRelease, output string, cnOutput string,
 			},
 		}
 		srsPath, _ := filepath.Abs(filepath.Join(ruleSetOutput, "geosite-"+code+".srs"))
-		//os.Stderr.WriteString("write " + srsPath + "\n")
-		outputRuleSet, err := os.Create(srsPath)
+		unstableSRSPath, _ := filepath.Abs(filepath.Join(ruleSetUnstableOutput, "geosite-"+code+".srs"))
+		// os.Stderr.WriteString("write " + srsPath + "\n")
+		var (
+			outputRuleSet         *os.File
+			outputRuleSetUnstable *os.File
+		)
+		outputRuleSet, err = os.Create(srsPath)
 		if err != nil {
 			return err
 		}
-		err = srs.Write(outputRuleSet, plainRuleSet)
-		if err != nil {
-			outputRuleSet.Close()
-			return err
-		}
+		err = srs.Write(outputRuleSet, plainRuleSet, false)
 		outputRuleSet.Close()
+		if err != nil {
+			return err
+		}
+		outputRuleSetUnstable, err = os.Create(unstableSRSPath)
+		if err != nil {
+			return err
+		}
+		err = srs.Write(outputRuleSetUnstable, plainRuleSet, true)
+		outputRuleSetUnstable.Close()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -359,12 +397,12 @@ func setActionOutput(name string, content string) {
 	os.Stdout.WriteString("::set-output name=" + name + "::" + content + "\n")
 }
 
-func release(source string, output string, cnOutput string, ruleSetOutput string) error {
+func release(source string, output string, cnOutput string, ruleSetOutput string, ruleSetOutputUnstable string) error {
 	sourceRelease, err := fetch(source)
 	if err != nil {
 		return err
 	}
-	err = generate(sourceRelease, output, cnOutput, ruleSetOutput)
+	err = generate(sourceRelease, output, cnOutput, ruleSetOutput, ruleSetOutputUnstable)
 	if err != nil {
 		return err
 	}
@@ -378,6 +416,7 @@ func main() {
 		"geosite.db",
 		"geosite-cn.db",
 		"rule-set",
+		"rule-set-unstable",
 	)
 	if err != nil {
 		log.Fatal(err)
