@@ -2,8 +2,6 @@
 
 set -Eeuo pipefail
 
-apt install golang-go
-
 ossutil_dir=~/ossutil
 git clone https://github.com/aliyun/ossutil.git --depth=1 "$ossutil_dir"
 pushd "$ossutil_dir"
