@@ -274,6 +274,12 @@ func mergeTags(data map[string][]geosite.Item) {
 		}
 		cnCodeList = append(cnCodeList, code)
 	}
+    // See: <https://github.com/Loyalsoldier/v2ray-rules-dat#user-content-geositedat>
+	for _, code := range codeList {
+		if code == "cn" || code == "china-list" || code == "google-cn" || code == "apple-cn" {
+            cnCodeList = append(cnCodeList, code)
+        }
+	}
 	newMap := make(map[geosite.Item]bool)
 	for _, item := range data["geolocation-cn"] {
 		newMap[item] = true
