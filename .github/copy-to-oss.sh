@@ -13,9 +13,9 @@ ossutil config -e "$OSS_ENDPOINT" -i "$OSS_ACCESS_KEY" -k "$OSS_ACCESS_KEY_SECRE
 ossutil cp rule-set/geosite-category-ads-all.srs "oss://$OSS_BUCKET_NAME"
 ossutil cp rule-set/geosite-cn.srs "oss://$OSS_BUCKET_NAME"
 
-curl https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs -LO
-curl https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-jp.srs -LO
-curl https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-us.srs -LO
+curl --fail https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs -LO
+curl --fail https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-jp.srs -LO
+curl --fail https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-us.srs -LO
 echo y | ossutil cp geoip-cn.srs "oss://$OSS_BUCKET_NAME"
 echo y | ossutil cp geoip-jp.srs "oss://$OSS_BUCKET_NAME"
 echo y | ossutil cp geoip-us.srs "oss://$OSS_BUCKET_NAME"
