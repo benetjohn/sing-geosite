@@ -276,7 +276,7 @@ func mergeTags(data map[string][]geosite.Item) {
 	}
     // See: <https://github.com/Loyalsoldier/v2ray-rules-dat#user-content-geositedat>
 	for _, code := range codeList {
-		if code == "cn" || code == "china-list" || code == "google-cn" || code == "apple-cn" {
+		if code == "cn" || code == "china-list" || code == "google-cn" || code == "apple-cn" || code == "win-update" || code == "win-extra" {
             cnCodeList = append(cnCodeList, code)
         }
 	}
