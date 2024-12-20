@@ -35,11 +35,13 @@ jobs:
         run: .github/release-branch.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Copy necessary files to oss
+      - name: Copy necessary files to R2
         if: steps.build.outputs.skip != 'true'
-        run: .github/copy-to-oss.sh
+        run: |
+          chmod +x .github/copy-to-r2.sh
+          .github/copy-to-r2.sh
         env:
-          OSS_ACCESS_KEY: ${{ secrets.OSS_ACCESS_KEY }}
-          OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
-          OSS_BUCKET_NAME: ${{ secrets.OSS_BUCKET_NAME }}
-          OSS_ENDPOINT: ${{ secrets.OSS_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_ACCESS_KEY_SECRET: ${{ secrets.R2_ACCESS_KEY_SECRET }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
