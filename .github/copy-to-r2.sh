@@ -27,5 +27,6 @@ curl --fail https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip
 for file in geoip-{cn,jp,us}.srs; do
   aws s3 cp "$file" "s3://${R2_BUCKET_NAME}/" \
     --endpoint-url "https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+    --checksum-algorithm CRC32 \
     --force
 done
